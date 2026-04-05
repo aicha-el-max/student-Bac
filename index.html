@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Real Edu Platform</title>
+</head>
+
+<body>
+
+<h2>🔥 REAL EDU PLATFORM</h2>
+
+<div id="auth">
+    <input id="email" placeholder="email">
+    <input id="pass" type="password" placeholder="password">
+    <button onclick="signup()">Sign up</button>
+    <button onclick="login()">Login</button>
+</div>
+
+<div id="app" style="display:none">
+    <h3>Welcome 👋 <span id="user"></span></h3>
+
+    <button onclick="addProgress()">Complete Lesson</button>
+    <button onclick="logout()">Logout</button>
+
+    <p>Progress: <span id="p"></span></p>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { 
+getAuth,
+createUserWithEmailAndPassword,
+signInWithEmailAndPassword,
+onAuthStateChanged,
+signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+import {
+getFirestore,
+doc,
+setDoc,
+getDoc,
+updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_DOMAIN",
+  projectId: "YOUR_ID",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_SENDER",
+  appId: "YOUR_APP"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// SIGN UP
+window.signup = async function(){
+  const email = email.value;
+  const pass = pass.value;
+
+  await createUserWithEmailAndPassword(auth,email,pass);
+
+  await setDoc(doc(db,"users",email),{
+    progress:0
+  });
+}
+
+// LOGIN
+window.login = async function(){
+  await signInWithEmailAndPassword(auth,email.value,pass.value);
+}
+
+// AUTH STATE
+onAuthStateChanged(auth, async (user)=>{
+  if(user){
+    document.getElementById("auth").style.display="none";
+    document.getElementById("app").style.display="block";
+    document.getElementById("user").innerText=user.email;
+
+    loadProgress(user.email);
+  }
+});
+
+// LOAD DATA
+async function loadProgress(email){
+  const ref = doc(db,"users",email);
+  const snap = await getDoc(ref);
+
+  document.getElementById("p").innerText =
+  snap.data().progress;
+}
+
+// ADD PROGRESS
+window.addProgress = async function(){
+  const user = auth.currentUser;
+  const ref = doc(db,"users",user.email);
+
+  const snap = await getDoc(ref);
+
+  let newP = snap.data().progress + 1;
+
+  await updateDoc(ref,{
+    progress:newP
+  });
+
+  loadProgress(user.email);
+}
+
+// LOGOUT
+window.logout = function(){
+  signOut(auth);
+  location.reload();
+}
+</script>
+
+</body>
+</html>
